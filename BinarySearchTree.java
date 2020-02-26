@@ -106,7 +106,7 @@ class BinarySearchTree{
 		}
 		
 		
-		static Node findNext(Node root, int value) {
+		static Node findNextRec(Node root, int value) {
 			//if its empty
 			if(root == null) {
 				return root;
@@ -129,7 +129,7 @@ class BinarySearchTree{
 			return null;
 		}
 		//Same as top function but will search for 
-		static Node findPrev(Node root, int value) {
+		static Node findPrevRec(Node root, int value) {
 			//if its empty
 		
 			return null;
@@ -148,7 +148,7 @@ class BinarySearchTree{
 		System.out.println("Value at the left of the left: " + BST.root.left.left.value);// prints 2
 		System.out.println("findMinRec: " + BST.findMinRec(BST.root).value); //prints smallest value(2)
 		System.out.println("findMaxRec: " + BST.findMaxRec(BST.root).value); //prints biggest value(10)
-		System.out.println(BST.findNext(BST.root, 7).value); // returns 10 because 10 is next after 7 in the tree
+		System.out.println(BST.findNextRec(BST.root, 7).value); // returns 10 because 10 is next after 7 in the tree
 		BST.deleteRec(BST.root, 2);
 		System.out.println("findMinRec: " + BST.findMinRec(BST.root).value); //prints smallest value( now 3 since we deleted 2)
 		//System.out.println(BST.root.left.left.value);
