@@ -1,0 +1,539 @@
+
+import java.util.ArrayList;
+import java.util.Random;
+
+  class AVL { 
+      
+    public class Node {
+         int value;
+         Node left;
+         Node right;
+         int height;
+         int balanceFactor;
+    
+         Node(int val) {
+            value = val;
+        }
+    
+         Node(int val, Node l, Node r) {
+            value = val;
+            left = l;
+            right = r;
+        }
+    
+       
+    } ;
+    
+    private Node root = null;
+    private int size = 0;
+
+    private enum direction {
+        LEFT, RIGHT
+    }
+
+    public void insert(int value) {
+         if (size == 0) {
+            this.root = new Node(value);
+        } else {
+            int mid = this.size / 2 + 1;
+
+            // Two arrays to keep track
+           ArrayList<Node> p = new ArrayList<Node>();
+           ArrayList<direction> children = new ArrayList<direction>();
+
+            int parentCount = 0;
+            //counter to use while loop rather than for loop
+            Node current = root;
+
+            // Traverse the nodes to find where to insert
+            while (current != null) {
+
+                if (value == current.value) {
+                    return; // Edge case if value is already there
+                } else {
+                    
+                    p.add(parentCount, current);
+                    // if the value you want to insert is less than nodes current value
+                    if (current.value > value) {
+                        current = current.left;
+                        children.add(parentCount, direction.LEFT);
+                    } else {
+                        current = current.right;
+                      children.add(parentCount, direction.RIGHT);
+                    }
+                    parentCount++; //increment to counter
+                }
+            }
+
+            // Add node at location found
+            current = p.get(parentCount - 1);
+            if (children.get(parentCount - 1) == direction.LEFT) {
+                current.left = new Node(value);
+            } else {
+                current.right = new Node(value);
+            }
+
+            // Iterate back through parents, updating fields and balancing
+            for (int i = parentCount - 1; i > 0; i--) {
+                //current = parents[i];
+                current = p.get(i);
+                this.updateFactorAndHeight(current);
+                this.rebalance(current, p.get(i - 1), children.get(i - 1));
+            }
+
+            // Edge case root
+            this.updateFactorAndHeight(this.root);
+            this.rebalance(this.root, null, null);
+        }
+        //update size of tree
+        this.size++;
+    }
+
+    private void updateFactorAndHeight(Node target) {
+        // Get children
+        Node left = target.left;
+        Node right = target.right;
+
+        // Calculate balance factor [height(left) - height(right)]
+        int numLeft = left == null ? -1 : left.height;
+        int numRight = right == null ? -1 : right.height;
+        target.balanceFactor = numLeft - numRight;
+
+        // Calculate height
+        numLeft = left == null ? -1 : left.height;
+        numRight = right == null ? -1 : right.height;
+        target.height = Math.max(numLeft, numRight) + 1;
+    }
+
+    private void rebalance(Node target, Node parent, direction type) {
+        int balanceFactor = target.balanceFactor;
+
+        if (balanceFactor > 1) {
+            // Subtree is LEFT heavy
+            if (target.left.balanceFactor < 0) {
+                // Left rotation of left child required before right rotation
+                // (L-R)
+                this.rotateLeft(target.left, target, direction.LEFT);
+            }
+
+            // Right rotation
+            this.rotateRight(target, parent, type);
+        } else if (balanceFactor < -1) {
+            // Subtree is RIGHT heavy
+
+            if (target.right.balanceFactor > 0) {
+                // Right rotation of right child required before left rotation
+                // (R-L)
+                rotateRight(target.right, target, direction.RIGHT);
+            }
+
+            // Left rotation
+            this.rotateLeft(target, parent, type);
+        }
+    }
+
+   
+    private void rotateRight(Node target, Node parent, direction type) {
+        // Get the node to pivot around
+        Node pivot = target.left;
+
+        // Ensure nothing stupid happens
+        if (pivot == null) {
+            return;
+        }
+
+        // Right rotation
+        target.left = pivot.right;
+        pivot.right = target;
+
+        // Update parent node connection
+        if (parent == null) {
+            this.root = pivot;
+        } else if (type == direction.LEFT) {
+            parent.left = pivot;
+        } else {
+            parent.right = pivot;
+        }
+
+        // Update 'target' then 'pivot' (order important)
+        this.updateFactorAndHeight(target);
+        this.updateFactorAndHeight(pivot);
+    }
+
+    
+    private void rotateLeft(Node target, Node parent, direction type) {
+        Node pivot = target.right;
+
+        // Ensure nothing stupid happens
+        if (pivot == null) {
+            return;
+        }
+
+        // Left rotation
+        target.right = pivot.left;
+        pivot.left = target;
+
+        // Update parent node connection
+        if (parent == null) {
+            this.root = pivot;
+        } else if (type == direction.LEFT) {
+            parent.left = pivot;
+        } else {
+            parent.right = pivot;
+        }
+
+        // Update 'target' then 'pivot' (order important)
+        this.updateFactorAndHeight(target);
+        this.updateFactorAndHeight(pivot);
+    }
+
+    public void deleteIter(int value) {
+
+        Node data = new Node(value);
+         int mid = this.size / 2 + 1;        
+
+         // Two arrays to keep track
+         ArrayList<Node> p = new ArrayList<Node>();
+         ArrayList<direction> children = new ArrayList<direction>();
+ 
+         int parentCount = 0;
+         Node current = root;
+        
+ 
+         do {
+             
+             p.add(parentCount, current);
+             if (value < current.value) {
+                 current = current.left;
+               
+                 children.add(parentCount, direction.LEFT);
+             } else {
+                 current = current.right;
+                 //childTypes[parentCount] = direction.RIGHT;
+                 children.add(parentCount, direction.RIGHT);
+             }
+             parentCount++;
+         } while (current != null && value != current.value);
+ 
+ 
+         // Get children of deleted node
+         Node left = current.left;
+         Node right = current.right;
+ 
+         // Handle 3 edge cases
+         //  no children
+         if (left == null && right == null) {
+             if (parentCount > 0) {
+                 // Node to delete is a leaf
+                 Node parent = p.get(parentCount - 1);
+                 if (children.get(parentCount - 1) == direction.LEFT) {
+                     parent.left = null;
+                 } else {
+                     parent.right = null;
+                 }
+             } else {
+                 // The node to delete is the root
+                 this.root = null;
+             }
+         } else if (left == null || right == null) {
+             // one child
+             // Retrieve the lone child
+             Node loneChild = left == null ? right : left;
+             if (parentCount > 1) {
+                 Node parent = p.get(parentCount - 1);
+                 if (children.get(parentCount - 2) == direction.LEFT) {
+                     parent.left = loneChild;
+                 } else {
+                     parent.right = loneChild;
+                 }
+             } else {
+                 this.root = loneChild;
+             }
+         } else {
+             // two children
+ 
+             // Find successor
+             Node successor = right;
+             Node successorParent = current;
+             direction type = direction.RIGHT;
+             while (successor.left != null) {
+                 successorParent = successor;
+                 p.set(parentCount, successorParent);
+                 parentCount++;
+                 successor = successor.left;
+                 type = direction.LEFT;
+             }
+ 
+             // Replace deleted data with successor data
+             current = successor;
+ 
+             // Del successor
+             if (type == direction.RIGHT) {
+                 successorParent.right = null;
+             } else {
+                 successorParent.left = null;
+             }
+         }
+ 
+         // Update and rebalnce
+         for (int i = parentCount - 1; i > 0; i--) {
+             current = p.get(i);
+             this.updateFactorAndHeight(current);
+             this.rebalance(current, p.get(i - 1), children.get(i - 1));
+         }
+ 
+         // Edge case rebalnce
+         if (parentCount > 0) {
+             this.updateFactorAndHeight(this.root);
+             this.rebalance(this.root, null, null);
+         }
+ 
+         // tree size -1
+         size--;
+ 
+     }
+ 
+     public Node findMinIter(Node root) {
+        Node current = root;
+        Node parent = null;
+        
+        while(current != null) {
+            parent = current;
+            current = current.left;
+        }
+        return parent;
+        
+    }
+    
+    public Node findMaxIter(Node root) {
+        Node current = root;
+        Node parent = null;
+        
+        while(current != null) {
+            parent = current;
+            current = current.right;
+        }
+        return parent;
+        
+    }
+    
+    Node findNext(Node root, int value) {
+        Node parent = root;
+        Node child = root;
+        //if its empty
+        if(root == null) {
+            return root;
+        }
+        //Edge case: the root of the tree is value you want to findnext for
+        // find the key value im looking for then find the smallest value of the right subtree 
+        do{
+            if(parent.value == value){
+                child = child.right;
+            }else{
+                if(child.value > value){
+                    child = child.left;
+                }else {
+                    child = parent;
+                    System.out.println("the parent is bigger");
+                }
+            }
+            System.out.println(child.value);
+        }
+        while(child != null && child.value != value);
+            
+        
+        
+        // return null if nothing is bigger/next
+        return child;
+    }
+
+    public int size() {
+        return this.size;
+    }
+
+    //just a test to print
+    void preOrder(Node node) { 
+        if (node != null) { 
+            System.out.print(node.value + " "); 
+            preOrder(node.left); 
+            preOrder(node.right); 
+        } 
+    } 
+
+
+
+    public int height() {
+        return  this.root.height;
+    }
+	
+	 
+    public static void main(String[]args){
+        AVL tree = new AVL();
+        BinarySearchTree bst = new BinarySearchTree();
+        bst.root = bst.insertIter(bst.root,0);
+        int[] randArr = getRandomArr(100000); // WTF THIS ACTUALLY RAN XD
+        for(int i =0; i < randArr.length; i++){
+            tree.insert(randArr[i]);
+            bst.insertIter(bst.root, randArr[i]);
+        }
+       System.out.println("AVL TREE HEIGHT: " + tree.height());
+       System.out.println("BST TREE HEIGHT: " + bst.height);  
+    }
+
+public static int[] getRandomArr(int val){
+    Random rd = new Random();
+    int[] temp = new int[val];
+    for(int i = 0; i < val; i++){
+        temp[i] = rd.nextInt();
+    }
+    return temp;
+}
+  }
+class BinarySearchTree{
+    //each tree has a bunch of nodes
+     class Node{
+        //value of the node
+        int value;
+        Node left;
+        Node right;
+        
+        public Node(int value) {
+            this.value = value;
+            left = null;
+            right = null;
+        }
+    }
+    Node root;
+    public int height = 0;
+    BinarySearchTree(){
+        root = null;
+    }
+    Node insertIter(Node root, int value) {
+        Node newNode = new Node(value);
+    
+        Node current = root;
+        Node parent = null;
+        //traverse the root until null
+        while(current != null) {
+            parent = current;
+            if(value > current.value) {
+                current = current.right;
+                
+            }else {
+                current = current.left;
+                this.height++;
+            }
+            
+        }
+        // parent is null means that there are no nodes in the tree
+        if(parent == null) {
+            parent = newNode;
+        }
+        // if the value is bigger than the parents go to the right
+        else if(value > parent.value) {
+            parent.right = newNode;
+        // else insert into the left
+        }else if(value < parent.value) {
+            parent.left = newNode;
+        }
+        
+        //return the inserted node
+        return parent;
+    }
+    
+     Node findMinRec(Node root) {
+        // this function can check the minimum of a whole tree or 
+        // the minimum of a side of a tree
+        //check if its empty
+        if(root == null)
+            return root;
+        // if the left is empty that means that node is the smallest
+        if(root.left == null) { 
+            return root;
+        }
+        // else keep going left to find the smallest value until theres
+        // no more going left.
+            return findMinRec(root.left);
+        
+        
+    }
+    //Same as min function but keep going right to find the maximum value until you cant go right anymore
+     Node findMaxRec(Node root) {
+        // this function can check the minimum of a whole tree or 
+        // the minimum of a side of a tree
+        //check if its empty
+        if(root == null)
+            return root;
+        // if the left is empty that means that node is the smallest
+        if(root.right == null) { 
+            return root;
+        }
+        // else keep going left to find the smallest value until theres
+        // no more going left.
+            return findMaxRec(root.right);
+        
+        
+    }
+    
+     Node deleteRec(Node root, int value) {
+        //check if tree is empty
+        if(root ==null) {
+            return root;
+        }else {
+        if(value > root.value) {
+            root.right = deleteRec(root.right, value);
+        }else if(value < root.value) {
+            root.left = deleteRec(root.left, value);
+            
+        }else {
+        //key is found	
+        //Node with one child or no children edge case l or r or NULL	
+        if(root.left == null) {
+            return root.right;
+        }else if(root.right == null) {
+            return root.left;
+        }
+        //Node with two children	
+        /**
+         * It is necessary to write a min value function traversal
+         * to find the successor to the node that will be deleted 
+         * that has two children and so I will be back here after 
+         * I write findMinRecursive.
+         */
+        root.value = findMinRec(root.right).value;
+        root.right = deleteRec(root.right, root.value);
+    }
+        }
+        return root;
+    }
+    
+    
+     Node findNextRec(Node root, int value) {
+        //if its empty
+        if(root == null) {
+            return root;
+        }
+        //Edge case: the root of the tree is value you want to findnext for
+        // find the key value im looking for then find the smallest value of the right subtree 
+        if(root.value == value) {
+            if(root.right != null) {
+                return findMinRec(root.right);
+            }
+        }
+        //edge case if the root value is bigger than the value provided, the next should be in the left subtree
+        else if(root.value > value) {
+            return findNextRec(root.left, value);
+        //else the right subtree
+        }else {
+            return findNextRec(root.right, value);
+        }
+        // return null if nothing is bigger/next
+        return null;
+    }
+    //Same as top function but will search for 
+     Node findPrevRec(Node root, int value) {
+        //if its empty
+    
+        return null;
+    }
+}
